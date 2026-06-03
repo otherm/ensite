@@ -7,6 +7,9 @@ Created on Wed Jun  3 13:47:56 2026
 
 import geopandas as gpd
 from shapely.geometry import Point
+
+# this loads a local file that we can store local settings in, such as
+# directory paths
 import local_settings
 
 
