@@ -73,7 +73,6 @@ def main():
         geocode_address(address)
     
 """  
-
     #----Uncomment to Validate Tool-----
     result = geocode_address(address)
     print("Source:",result["source"])
