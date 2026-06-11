@@ -19,18 +19,7 @@ if not GOOGLE_MAPS_API_KEY:
     raise EnvironmentError(
         "GOOGLE_MAPS_API_KEY not found. "
         "Check that config/production.env exists and contains the key.")
-
-def main():
-    #Prompt the user for their address
-    try:
-        address = str(input("Enter your address:"))
-    except (ValueError, TypeError):
-        print("Must enter a valid address.")
-        return   
-    #Run geocode_address function
-    result = geocode_address(address)
-    print(result)
-                
+           
 def geocode_address(address: str) -> dict:
     """
     Converts a street address to lat/long coordinates.
@@ -93,6 +82,19 @@ def geocode_address(address: str) -> dict:
              "success": False,
              "error": f"Could not geocode: {address}",
              "suggestion": "Try adding zip code or state to address"  
-                 }   
+                 } 
+def main():
+    #Prompt the user for their address
+    try:
+        address = str(input("Enter your address:"))
+    except (ValueError, TypeError):
+        print("Must enter a valid address.")
+        return   
+    #Run geocode_address function
+    result = geocode_address(address)
+    print("Latitude:",result["latitude"])
+    print("Longitutde:",result["longitude"])
+    print(result["formatted_address"])
+    
 if __name__ == "__main__":
     main()
