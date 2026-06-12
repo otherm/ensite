@@ -2,6 +2,7 @@
 ENSITE Application Settings
 """
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,7 +27,7 @@ load_dotenv()
 # Data Paths
 # ============================================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-#SHAPEFILE_PATH = os.path.join(BASE_DIR, "data", "shapefiles", "electric_territories.shp")
+SHAPEFILE_PATH = os.path.join(BASE_DIR, "data", "shapefiles")
 #POLICY_DOCS_PATH = os.path.join(BASE_DIR, "data", "policy_docs")
 #CACHE_PATH = os.path.join(BASE_DIR, "data", "cache")
 #OUTPUTS_PATH = os.path.join(BASE_DIR, "outputs")
