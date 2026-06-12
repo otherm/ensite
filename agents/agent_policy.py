@@ -8,6 +8,7 @@ CORRECTED VERSION - properly integrates with:
 - agents/llm_factory.py       (LLM connection)
 
 Author: ENSITE Project, UNH
+Deepthought did this
 Date: June 2026
 """
 
