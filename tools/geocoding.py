@@ -10,7 +10,7 @@ from pathlib import Path
 import os
 
 # Using a relative path so it works on any machine, only if the '.env' file is 
-# stored in the 'config' foler within the 'ensite' repository
+# stored in the 'config' folder within the 'ensite' repository
 env_path = Path(__file__).parent.parent / 'config' / '.env'
 load_dotenv(dotenv_path=env_path)
 
@@ -70,16 +70,16 @@ def main():
         return   
     #Run geocode_address function
     if address:
-        geocode_address(address)
-    
-"""  
-    #----Uncomment to Validate Tool-----
-    result = geocode_address(address)
-    print("Source:",result["source"])
-    print("Latitude:",result["latitude"])
-    print("Longitutde:",result["longitude"])
-    print(result["formatted_address"])
-    
-if __name__ == "__main__":
-    main()
-"""
+        result = geocode_address(address)
+        print("lat =", result["latitude"])
+        print("lon =",result["longitude"])
+
+#     """----Uncomment to Validate Tool---"""
+#     result = geocode_address(address)
+#     print("Source:",result["source"])
+#     print("Latitude:",result["latitude"])
+#     print("Longitude:",result["longitude"])
+#     print(result["formatted_address"])
+#
+# if __name__ == "__main__":
+#     main()
