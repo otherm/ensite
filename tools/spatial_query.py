@@ -19,7 +19,9 @@ Date: June 2026
 import logging
 import os
 import geopandas as gpd
+from pandas.io.formats.style_render import Tooltips
 from shapely.geometry import Point
+from tools.geocoding import geocode_address
 from config.settings import (
     SHAPEFILE_DIR,
     NEW_ENGLAND_STATES,
@@ -47,7 +49,7 @@ _iwg_gdf = None
 
 UTILITY_SHAPEFILE = os.path.join(SHAPEFILE_DIR, 'New_England_Electric_Utilitiesv2a.shp')
 DOE_DAC_SHAPEFILE = os.path.join(SHAPEFILE_DIR, 'DOE_DACs.shp')
-IWG_SHAPEFILE = os.path.join(SHAPEFILE_DIR, 'IWG_Manufacturer.shp')
+IWG_SHAPEFILE = os.path.join(SHAPEFILE_DIR, 'IWG_manufacturers.shp')
 
 
 def _load_utility_shp():
@@ -597,11 +599,159 @@ def find_DACSTS(
         }
 
 def find_IWG(
-    address: str,
+    latitude: float,
+    longitude: float
 ) -> dict:
     """
-    IN PROGRESS
-    """
+           Determines if address is listed in IWG (Industrial
+           Working Group) database using a spatial
+           point-in-polygon query against DOE_DACs shapefiles.
+
+           Args:
+               latitude:  Facility latitude coordinate
+              longitude: Facility longitude coordinate
+
+           Returns:
+               dict with:
+               - success: True/False
+               - IWG_status: True/False
+               - facility_a: Name of facility
+               - confidence: high/medium/low
+               - error: Error message if failed
+           """
+    # Validate inputs
+    if latitude is None or longitude is None:
+        return {
+            "success": False,
+            "error": "Latitude and longitude cannot be None",
+            "suggestion": (
+                "Run geocoding first to get coordinates"
+            )
+        }
+        # Validate coordinate ranges
+        # New England is roughly:
+        # Lat: 41.0 to 47.5
+        # Lon: -73.7 to -66.9
+    if not (41.0 <= latitude <= 47.5):
+        return {
+            "success": False,
+            "error": (
+                f"Latitude {latitude} is outside "
+                f"New England range (41.0 to 47.5)"
+            ),
+            "suggestion": (
+                "ENSITE currently covers New England only. "
+                "Verify the address is in CT, MA, ME, NH, RI, or VT."
+            )
+        }
+
+    if not (-73.7 <= longitude <= -66.9):
+        return {
+            "success": False,
+            "error": (
+                f"Longitude {longitude} is outside "
+                f"New England range (-73.7 to -66.9)"
+            ),
+            "suggestion": (
+                "ENSITE currently covers New England only. "
+                "Verify the address is in CT, MA, ME, NH, RI, or VT."
+            )
+        }
+    # Load shapefile (uses cache after first call)
+    gdf = _load_iwg_shp()
+
+    if gdf is None:
+        return {
+            "success": False,
+            "error": "IWG_Manufacturers shapefile could not be loaded",
+            "suggestion": (
+                f"Check that shapefile exists at: "
+                f"{IWG_SHAPEFILE}"
+            )
+        }
+    # Create point geometry
+    # NOTE: Shapely Point takes (longitude, latitude)
+    # NOT (latitude, longitude)!
+    # This is a very common source of bugs!
+    point = Point(longitude, latitude)
+
+    point_gdf = gpd.GeoDataFrame(
+        index=[0],
+        geometry=[point],
+        crs="EPSG:4326"
+    )
+    bounds = gdf.total_bounds
+    if not (bounds[0] <= longitude <= bounds[2] and bounds[1] <= latitude <= bounds[3]):
+        return {
+            "success": False,
+            "error": (
+                f"Coordinates {latitude}, {longitude} are outside the shapefile bounds"
+            ),
+            "suggestion": (
+                "Ensure the coordinates are within the New England region."
+            )
+        }
+
+    # Perform spatial query
+    # Find which utility territory polygon
+    # contains our point
+    # Perform a spatial join to find the intersecting polygon
+    # This adds shapefile attributes to our point DataFrame
+
+    else:
+        print("The given coordinates are inside the shapefile boundaries.")
+
+    # Determine formatted address from lat,lon coordinates
+    geocode_address(address=f"{latitude}, {longitude}")
+    formatted_address = result["formatted_address"]
+
+    # Extract the attribute value
+    joined_gdf = gpd.sjoin(point_gdf, gdf, predicate="within")
+
+    if not joined_gdf.empty:
+        name = joined_gdf['name'].iloc[0]
+        facility_a = joined_gdf['facility_a'].iloc[0]
+        naics = joined_gdf['naics_ni_c'].iloc[0]
+
+        logger.info(
+            f"IWG status found: {name} "
+            f"({name}, {facility_a}, {naics})"
+        )
+
+        return {
+            "success": True,
+            "name": str(name),
+            "facility_a": str(facility_a),
+            "confidence": "high",
+            "source": "IWG Manufacturers Shapefile",
+            "coordinates_queried": {
+                "latitude": latitude,
+                "longitude": longitude
+            }
+        }
+
+    else:
+        # Point not found in any polygon
+        # May be on a boundary or outside coverage
+        logger.warning(
+            f"No IWG status found at "
+            f"{latitude}, {longitude}"
+        )
+        return {
+            "success": False,
+            "error": (
+                f"No IWG status found for "
+                f"coordinates {latitude}, {longitude}"
+            ),
+            "suggestion": (
+                "Location may be on a shapefile boundary. "
+                "Try a nearby address instead."
+            ),
+            "coordinates_queried": {
+                "latitude": latitude,
+                "longitude": longitude
+            }
+        }
 def get_shapefile_info(target: str = "utility") -> dict:
     """
     Returns diagnostic information about the
@@ -673,7 +823,27 @@ def reset_cache(target: str = "all"):
     else:
         logger.warning(
             f"Unrecognized cache target: {target}"
-            f"  Valid options: {['utility', 'dac', 'all']}"
+            f"  Valid options: {['utility', 'dac', 'iwg', 'all']}"
         )
+
+# ==========================================================
+#            UNCOMMENT TO VALIDATE TOOL
+# ==========================================================
+# address = input("Enter address: ")
+# geocode_address(address)
+# result = geocode_address(address)
+# latitude = result["latitude"]
+# longitude = result["longitude"]
+#
+# def validate(latitude, longitude):
+#     _load_utility_shp()
+#     _load_dac_shp()
+#     _load_iwg_shp()
+#     find_utility(longitude, latitude)
+#     find_DACSTS(longitude, latitude)
+#     find_IWG(longitude, latitude)
+#
+# validate(longitude,latitude)
+#
 
 
