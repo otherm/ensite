@@ -361,7 +361,7 @@ Here is the data that has been collected:
 FACILITY INFORMATION:
 - Input Address: {agent_state.get('address', 'Unknown')}
 - Formatted Address: {agent_state.get('formatted_address', 'Unknown')}
-- Coordinates: {agent_state.get('latitude')}, {state.get('longitude')}
+- Coordinates: {agent_state.get('latitude')}, {agent_state.get('longitude')}
 - Geocode Confidence: {agent_state.get('geocode_confidence', 'Unknown')}
 
 UTILITY IDENTIFICATION:
@@ -406,7 +406,7 @@ Flag any unknown or missing data clearly.
         agent_state["final_summary"] = f"""
 ENSITE AGENT 1 RESULT
 =====================
-Address:    {agent_state.get('formatted_address', state.get('address'))}
+Address:    {agent_state.get('formatted_address', agent_state.get('address'))}
 Utility:    {agent_state.get('utility_name', 'Unknown')}
 State:      {agent_state.get('state', 'Unknown')}
 ISO Region: {agent_state.get('iso_region', 'ISO New England')}

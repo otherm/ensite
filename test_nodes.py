@@ -329,23 +329,25 @@ def main():
     # Node 3: Regulatory info
     # Runs regardless of shapefile
 
-    #reg_info = test_node_regulatory_info(utility)
-    #results["node3"] = reg_info is not None
+    reg_info = test_node_regulatory_info(utility)
+    results["node3"] = reg_info is not None
 
     # Node 4: LLM summary
     # Ask user before running (takes time)
 
-    #print("\n" + "─" * 55)
-    #run_llm = input(
-    #    "Run Node 4 LLM test? "
-    #    "Requires Ollama (y/n): "
-    #).strip().lower()
+    print("\n" + "─" * 55)
+    run_llm = input(
+        "Run Node 4 LLM test? "
+        "Requires Ollama (yes/no): "
+    ).strip().lower()
 
-    #if run_llm == "y":
-    #    llm_result = test_node_llm_summary(reg_info)
-    #    results["node4"] = llm_result is not None
-    #else:
-    #    print("  ⏭️  Skipping Node 4 LLM test")
+    if run_llm == "yes":
+        llm_result = test_node_llm_summary(reg_info)
+        print('llm result')
+        print(llm_result)
+        results["node4"] = llm_result is not None
+    else:
+        print("  ⏭️  Skipping Node 4 LLM test")
 
     # Summary
     print("\n" + "=" * 55)
