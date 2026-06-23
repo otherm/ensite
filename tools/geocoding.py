@@ -75,11 +75,11 @@ def main():
         print("lon =",result["longitude"])
 
 #     """----Uncomment to Validate Tool---"""
-    result = geocode_address(address)
-    print("Source:",result["source"])
-    print("Latitude:",result["latitude"])
-    print("Longitude:",result["longitude"])
-    print(result["formatted_address"])
-
-if __name__ == "__main__":
-    main()
+#     result = geocode_address(address)
+#     print("Source:",result["source"])
+#     print("Latitude:",result["latitude"])
+#     print("Longitude:",result["longitude"])
+#     print(result["formatted_address"])
+#
+# if __name__ == "__main__":
+#     main()

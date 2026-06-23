@@ -895,21 +895,21 @@ def reset_cache(target: str = "all"):
 # ==========================================================
 #            UNCOMMENT TO VALIDATE TOOL
 # ==========================================================
-address = input("Enter address: ")
-geocode_address(address)
-result = geocode_address(address)
-latitude = result["latitude"]
-longitude = result["longitude"]
-
-def validate(latitude, longitude):
-    _load_utility_shp()
-    _load_dac_shp()
-    _load_iwg_dbf()
-    find_utility(longitude, latitude)
-    find_dacsts(longitude, latitude)
-    find_IWG(longitude, latitude)
-
-validate(longitude,latitude)
-
+# address = input("Enter address: ")
+# geocode_address(address)
+# result = geocode_address(address)
+# latitude = result["latitude"]
+# longitude = result["longitude"]
+#
+# def validate(latitude, longitude):
+#     _load_utility_shp()
+#     _load_dac_shp()
+#     _load_iwg_dbf()
+#     find_utility(longitude, latitude)
+#     find_dacsts(longitude, latitude)
+#     find_IWG(longitude, latitude)
+#
+# validate(longitude,latitude)
+#
 
 
