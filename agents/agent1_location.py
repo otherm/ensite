@@ -62,6 +62,8 @@ from config.settings import (
 from config.state_data import STATE_REGULATORY_INFO
 from tools.geocoding import geocode_address
 from tools.spatial_query import find_utility
+from tools.spatial_query import find_dacsts
+from tools.spatial_query import find_iwg
 
 # Set up logging
 logging.basicConfig(
@@ -101,13 +103,24 @@ class AgentState(TypedDict):
     state: Optional[str]                # Two letter state code
     iso_region: Optional[str]           # ISO New England
 
-    # SET BY NODE 3 (regulatory info)
+    # SET BY NODE 3 (dac status lookup)
+    DACSTS: Optional[str]               # e.g. False
+    city: Optional[str]                 # e.g. Durham
+    county: Optional[str]               # e.g. Strafford County
+    stateabb: Optional[str]             # Two letter state code
+
+    # SET BY NODE 4 (iwg status lookup)
+    name: Optional[str]                 # Name of company/industry
+    facility_a: Optional[str]           # Facility address
+    naics_ni_s: Optional[str]           # NAICS Code
+
+    # SET BY NODE 5 (regulatory info)
     regulatory_info: Optional[dict]     # From state_data.py
     puc_name: Optional[str]             # Regulator name
     puc_website: Optional[str]          # Regulator website
     energy_office: Optional[str]        # State energy office
 
-    # SET BY NODE 4 (LLM summary)
+    # SET BY NODE 6 (LLM summary)
     final_summary: Optional[str]        # LLM written summary
 
     # ERROR HANDLING
@@ -124,7 +137,7 @@ class AgentState(TypedDict):
 # 2. Does its specific job
 # 3. Returns the updated state
 #
-# No LLM involved until Node 4!
+# No LLM involved until Node 6!
 
 def node_geocode(agent_state: AgentState) -> AgentState:
     """
@@ -257,10 +270,148 @@ def node_find_utility(agent_state: AgentState) -> AgentState:
 
     return agent_state
 
+def node_find_dacsts(agent_state: AgentState) -> AgentState:
+    """
+    NODE 3: Find the DAC Status
+    the geocoded location.
+
+    Performs a spatial point-in-polygon query
+    against DOE DAC shapefiles.
+
+    Reads:  state["latitude"]
+            state["longitude"]
+    Writes: state["DACSTS"]
+            state["city"]
+            state["county"]
+            state["stateabb"]
+    """
+    logger.info(
+        f"Node 3 - Finding DAC Status at: "
+        f"{agent_state['latitude']}, {agent_state['longitude']}"
+    )
+
+    try:
+        # Call spatial query tool from tools/spatial_query.py
+        result = find_dacsts(
+            agent_state["latitude"],
+            agent_state["longitude"]
+        )
+
+        if result["success"]:
+            agent_state["DACSTS"] = result.get(
+                "DACSTS", "Unknown"
+            )
+            agent_state["city"] = result.get(
+                "city", "Unknown"
+            )
+            agent_state["county"] = result.get(
+                "county", "Unknown"
+            )
+            agent_state["stateabb"] = result.get(
+                "stateabb", "Unknown"
+            )
+            logger.info(
+                f"  Found DAC Status: {agent_state['DACSTS']} "
+                f"({agent_state['state']})"
+            )
+
+        else:
+            agent_state["error"] = result.get(
+                "error",
+                "DAC Status not found for these coordinates"
+            )
+            agent_state["error_node"] = "find_dacsts"
+            agent_state["error_suggestion"] = (
+                "Location may be on a shapefile boundary. "
+                "Try a nearby address or contact the "
+                "state DOE DAC Database directly."
+            )
+            logger.error(
+                f"  Utility not found: {agent_state['error']}"
+            )
+
+    except Exception as e:
+        agent_state["error"] = f"DAC lookup exception: {str(e)}"
+        agent_state["error_node"] = "find_dacsts"
+        agent_state["error_suggestion"] = (
+            "Check that shapefile is loaded correctly. "
+            "Verify SHAPEFILE_DIR in config/settings.py"
+        )
+        logger.error(f"  DAC Status lookup exception: {e}")
+
+    return agent_state
+
+def node_find_iwg(agent_state: AgentState) -> AgentState:
+    """
+    NODE 4: Find the IWG Status using
+    formatted address.
+
+    Performs a spatial point-in-polygon query
+    to generate an address which is then
+    compared against IWG database
+
+    Reads:  state["latitude"]
+            state["longitude"]
+    Writes: state["name"]
+            state["facility_a"]
+            state["naics_ni_c"]
+    """
+    logger.info(
+        f"Node 4 - Finding IWG Status at: "
+        f"{agent_state['latitude']}, {agent_state['longitude']}"
+    )
+
+    try:
+        # Call spatial query tool from tools/spatial_query.py
+        result = find_iwg(
+            agent_state["latitude"],
+            agent_state["longitude"]
+        )
+
+        if result["success"]:
+            agent_state["name"] = result.get(
+                "name", "Unknown"
+            )
+            agent_state["facility_a"] = result.get(
+                "facility_a", "Unknown"
+            )
+            agent_state["naics_ni_c"] = result.get(
+                "naics_ni_c", "Unknown"
+            )
+            logger.info(
+                f"  Found IWG Status: {agent_state['DACSTS']} "
+                f"({agent_state['facility_a']})"
+            )
+
+        else:
+            agent_state["error"] = result.get(
+                "error",
+                "IWG Status not found for these coordinates"
+            )
+            agent_state["error_node"] = "find_iwg"
+            agent_state["error_suggestion"] = (
+                "Location may be on a shapefile boundary. "
+                "Try a nearby address or search the "
+                "IWG Database directly."
+            )
+            logger.error(
+                f"  IWG Status not found: {agent_state['error']}"
+            )
+
+    except Exception as e:
+        agent_state["error"] = f"IWG lookup exception: {str(e)}"
+        agent_state["error_node"] = "find_iwg"
+        agent_state["error_suggestion"] = (
+            "Check that shapefile is loaded correctly. "
+            "Verify SHAPEFILE_DIR in config/settings.py"
+        )
+        logger.error(f"  IWG Status lookup exception: {e}")
+
+    return agent_state
 
 def node_get_regulatory_info(agent_state: AgentState) -> AgentState:
     """
-    NODE 3: Get regulatory agency contacts and
+    NODE 5: Get regulatory agency contacts and
     policy context for the identified state.
 
     Reads directly from config/state_data.py.
@@ -274,7 +425,7 @@ def node_get_regulatory_info(agent_state: AgentState) -> AgentState:
     """
     state_code = agent_state.get("state", "")
     logger.info(
-        f"Node 3 - Getting regulatory info for: {state_code}"
+        f"Node 5 - Getting regulatory info for: {state_code}"
     )
 
     try:
@@ -325,7 +476,7 @@ def node_get_regulatory_info(agent_state: AgentState) -> AgentState:
 
 def node_llm_summary(agent_state: AgentState) -> AgentState:
     """
-    NODE 4: Use LLM to write a clear, professional
+    NODE 6: Use LLM to write a clear, professional
     summary of the utility identification results.
 
     This is the ONLY node that uses the LLM.
@@ -339,7 +490,7 @@ def node_llm_summary(agent_state: AgentState) -> AgentState:
     Reads:  All state fields set by nodes 1-3
     Writes: state["final_summary"]
     """
-    logger.info("Node 4 - Generating LLM summary")
+    logger.info("Node 6 - Generating LLM summary")
 
     try:
         # Connect to Ollama

@@ -26,6 +26,8 @@ sys.path.insert(
 from agents.agent1_location import (
     node_geocode,
     node_find_utility,
+    node_find_dacsts,
+    node_find_iwg,
     node_get_regulatory_info,
     node_llm_summary
 )
@@ -202,13 +204,122 @@ def test_node_find_utility(geocoded_state=None):
         )
         return None
 
-
 # ============================================
 # NODE 3 TEST
 # ============================================
+def test_node_find_dacsts(geocoded_state=None):
+    """Tests Node 3: DAC Status."""
+    print_test_header("Node 3: Find DAC Status")
+
+    if geocoded_state is None:
+        # Use known coordinates for Durham NH
+        # if geocoding was not run first
+        print("  Using hardcoded Durham NH coordinates")
+        state = blank_state()
+        state["address"] = "105 Main Street, Durham, NH 03824"
+        state["latitude"] = 43.1348
+        state["longitude"] = -70.9234
+    else:
+        state = geocoded_state
+
+    print(
+        f"  Input coordinates: "
+        f"{state['latitude']}, {state['longitude']}"
+    )
+    print("  Running node_find_dacsts()...")
+
+    result = node_find_dacsts(state)
+
+    print_result("DAC Status", result["DACSTS"], expected=False)
+    print_result("City", result["city"])
+    print_result("County", result["county"])
+    print_result("State Abb.", result["stateabb"])
+    print_result("Error", result["error"])
+
+    if result["DACSTS"]:
+        print(f"\n  ✅ Node 3 PASSED")
+        # Sanity check for Durham NH
+        if "Strafford County" in str(result["county"]).lower():
+            print(f"  ✅ Correct location for Durham NH (Strafford County)")
+        else:
+            print(
+                f"  ⚠️  Unexpected county: {result['county']}"
+                f"\n     Expected Strafford County for Durham NH"
+            )
+        return result
+    else:
+        print(f"\n  ❌ Node 3 FAILED")
+        print(f"  Error: {result.get('error')}")
+        print(
+            f"\n  Common causes:"
+            f"\n  1. Shapefile not found"
+            f"\n  2. Missing 'global _doe_dac_gdf' in spatial_query.py"
+            f"\n  3. Column names in shapefile do not match expected"
+            f"\n  4. Coordinates outside shapefile coverage"
+        )
+        return None
+
+# ============================================
+# NODE 4 TEST
+# ============================================
+def test_node_find_iwg(geocoded_state=None):
+    """Tests Node 4: IWG Verification."""
+    print_test_header("Node 4: Find IWG Status")
+
+    if geocoded_state is None:
+        # Use known coordinates for Systems Engineering Inc. Portland ME
+        # if geocoding was not run first
+        print("  Using hardcoded Systems Engineering Inc. coordinates")
+        state = blank_state()
+        state["address"] = "120 Exchange St, Portland, ME, 04101"
+        state["latitude"] = 43.65846
+        state["longitude"] = -70.25695
+    else:
+        state = geocoded_state
+
+    print(
+        f"  Input coordinates: "
+        f"{state['latitude']}, {state['longitude']}"
+    )
+    print("  Running node_find_iwg()...")
+
+    result = node_find_iwg(state)
+
+    print_result("Company Name", result["name"])
+    print_result("Address", result["facility_a"])
+    print_result("NAICS Code", result["naics_ni_c"])
+    print_result("Error", result["error"])
+
+    if result["name"] and result["facility_a"]:
+        print(f"\n  ✅ Node 4 PASSED")
+        # Sanity check for Durham NH
+        if "334210" in result["naics_ni_c"]:
+            print(f"  ✅ Correct NAICS for Systems Engineering, Inc. (334210)")
+        else:
+            print(
+                f"  ⚠️  Unexpected NAICS: {result['utility_name']}"
+                f"\n     Expected 334210 for Systems Engineering, Inc."
+            )
+        return result
+    else:
+        print(f"\n  ❌ Node 4 FAILED")
+        print(f"  Error: {result.get('error')}")
+        print(
+            f"\n  Common causes:"
+            f"\n  1. Shapefile not found"
+            f"\n  2. Missing 'global _iwg_dbf' in spatial_query.py"
+            f"\n  3. Column names in shapefile do not match expected"
+            f"\n  4. Coordinates outside shapefile coverage"
+        )
+        return None
+
+
+# ============================================
+# NODE 5 TEST
+# ============================================
 def test_node_regulatory_info(utility_state=None):
-    """Tests Node 3: Regulatory info lookup."""
-    print_test_header("Node 3: Get Regulatory Info")
+    """Tests Node 5: Regulatory info lookup."""
+    print_test_header("Node 5: Get Regulatory Info")
 
     if utility_state is None:
         print("  Using hardcoded NH state")
@@ -232,10 +343,10 @@ def test_node_regulatory_info(utility_state=None):
     )
 
     if result["puc_name"]:
-        print(f"\n  ✅ Node 3 PASSED")
+        print(f"\n  ✅ Node 5 PASSED")
         return result
     else:
-        print(f"\n  ❌ Node 3 FAILED")
+        print(f"\n  ❌ Node 5 FAILED")
         print(
             f"  Check config/state_data.py has "
             f"STATE_REGULATORY_INFO['NH']"
@@ -244,11 +355,11 @@ def test_node_regulatory_info(utility_state=None):
 
 
 # ============================================
-# NODE 4 TEST
+# NODE 6 TEST
 # ============================================
 def test_node_llm_summary(reg_state=None):
-    """Tests Node 4: LLM summary generation."""
-    print_test_header("Node 4: LLM Summary")
+    """Tests Node 6: LLM summary generation."""
+    print_test_header("Node 6: LLM Summary")
     print("  Note: This requires Ollama to be running")
     print("  Check: http://localhost:11434 in browser")
 
@@ -281,10 +392,10 @@ def test_node_llm_summary(reg_state=None):
     if result["final_summary"]:
         preview = result["final_summary"][:150].replace("\n", " ")
         print(f"\n  Summary preview: {preview}...")
-        print(f"\n  ✅ Node 4 PASSED")
+        print(f"\n  ✅ Node 6 PASSED")
         return result
     else:
-        print(f"\n  ❌ Node 4 FAILED")
+        print(f"\n  ❌ Node 6 FAILED")
         print(
             f"  Check Ollama is running at "
             f"http://localhost:11434"
