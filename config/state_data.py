@@ -431,7 +431,8 @@ STATE_STABLE_FACTS = {
             {
                 "name": "Versant Power",
                 "formerly": "Emera Maine",
-                "service_area": "Northern Maine",
+                "owner": "ENMAX",
+                "service_area": "Northern and eastern Maine",
                 "website": "versantpower.com",
                 "eia_id": "19545"
             }
@@ -492,16 +493,16 @@ STATE_STABLE_FACTS = {
                 "eia_id": "3454"
             },
             {
-                "name": "Unitil",
-                "service_area": "Concord and southeastern NH",
+                "name": "Unitil Energy Systems",
+                "service_area": "Seacoast, Capital, and southern NH",
                 "website": "unitil.com",
                 "eia_id": "20155"
             },
             {
-                "name": "New Hampshire Electric Cooperative",
-                "service_area": "Rural central and northern NH",
-                "website": "nhec.com",
-                "eia_id": "13478"
+                "name": "Liberty Utilities",
+                "service_area": "Western and southern NH",
+                "website": "libertyutilities.com",
+                "eia_id": "17166"
             }
         ],
 
@@ -515,6 +516,10 @@ STATE_STABLE_FACTS = {
             "name": "NH Department of Energy",
             "website": "energy.nh.gov",
             "phone": "(603) 271-3670"
+        },
+        "efficiency_program": {
+            "name": "NHSaves",
+            "website": "nhsaves.com"
         },
 
         "dominant_industrial_sectors": [
@@ -601,28 +606,52 @@ STATE_STABLE_FACTS = {
 
         "electric_utilities": [
             {
-                "name": "Eversource Energy (MA)",
-                "service_area": "Eastern MA and western MA",
-                "website": "eversource.com/content/ma"
+                "name": "Eversource Energy Eastern MA (NSTAR)",
+                "owner": "Eversource Energy",
+                "service_area": "Eastern Massachusetts",
+                "website": "eversource.com/content/ma",
+                "eia_id": "13975"
             },
             {
-                "name": "National Grid MA",
-                "service_area": "Central and eastern MA",
-                "website": "nationalgridus.com/ma"
+                "name": "Eversource Energy Western MA (WMECO)",
+                "owner": "Eversource Energy",
+                "service_area": "Western Massachusetts",
+                "website": "eversource.com/content/ma",
+                "eia_id": "20542"
             },
             {
-                "name": "Unitil MA",
+                "name": "Massachusetts Electric Company",
+                "owner": "National Grid",
+                "service_area": "Central and eastern Massachusetts",
+                "website": "nationalgridus.com/ma",
+                "eia_id": "12261"
+            },
+            {
+                "name": "Nantucket Electric Company",
+                "owner": "National Grid",
+                "service_area": "Nantucket Island",
+                "website": "nationalgridus.com/ma",
+                "eia_id": "13206"
+            },
+            {
+                "name": "Unitil Energy Systems MA",
+                "owner": "Unitil Corp",
                 "service_area": "Fitchburg area",
-                "website": "unitil.com"
+                "website": "unitil.com",
+                "eia_id": "24590"
             }
         ],
-
         "primary_regulator": {
             "name": "Massachusetts Department of Public Utilities",
             "abbreviation": "MA DPU",
             "website": "mass.gov/dpu"
         },
         "energy_office": {
+            "name": "Massachusetts Department of Energy Resources",
+            "abbreviation": "DOER",
+            "website": "mass.gov/doer"
+        },
+        "clean_energy_center": {
             "name": "Massachusetts Clean Energy Center",
             "abbreviation": "MassCEC",
             "website": "masscec.com"
@@ -703,9 +732,10 @@ STATE_STABLE_FACTS = {
 
         "electric_utilities": [
             {
-                "name": "National Grid RI",
+                "name": "Rhode Island Energy",
+                "formerly": "National Grid RI",
                 "service_area": "All of Rhode Island",
-                "website": "nationalgridus.com/ri",
+                "website": "rienergy.com",
                 "notes": "Single utility simplifies decision making"
             }
         ],
@@ -920,6 +950,56 @@ NAICS_SECTOR_CONTEXT = {
             "Energy management systems"
         ],
         "high_energy_intensity": False
+    },
+    "321": {
+        "name": "Wood Product Manufacturing",
+        "relevant_technologies": [
+            "Biomass CHP",
+            "Solar PV",
+            "Steam optimization",
+            "Energy storage"
+        ],
+        "high_energy_intensity": True
+    },
+    "333": {
+        "name": "Machinery Manufacturing",
+        "relevant_technologies": [
+            "Solar PV",
+            "Compressed air optimization",
+            "Motor efficiency",
+            "Battery storage"
+        ],
+        "high_energy_intensity": False
+    },
+    "335": {
+        "name": "Electrical Equipment Manufacturing",
+        "relevant_technologies": [
+            "Solar PV",
+            "Energy management systems",
+            "Motor efficiency",
+            "Battery storage"
+        ],
+        "high_energy_intensity": False
+    },
+    "313": {
+        "name": "Textile Mills",
+        "relevant_technologies": [
+            "Solar PV",
+            "Steam optimization",
+            "Motor efficiency",
+            "CHP"
+        ],
+        "high_energy_intensity": True
+    },
+    "326": {
+        "name": "Plastics and Rubber Products",
+        "relevant_technologies": [
+            "Solar PV",
+            "Process heat recovery",
+            "Energy management systems",
+            "Battery storage"
+        ],
+        "high_energy_intensity": True
     }
 }
 
@@ -965,7 +1045,7 @@ def get_search_queries(
     state: str,
     technology: str,
     size_kw: float,
-    year: int = None
+    year: int| None = None
 ) -> list:
     """
     Builds search query strings for an agent
@@ -986,7 +1066,7 @@ def get_search_queries(
         year = datetime.datetime.now().year
 
     stable = get_stable_facts(state)
-    sources = get_authoritative_sources(state)
+    _sources = get_authoritative_sources(state)
 
     # Get URLs for query templates
     puc_url = stable.get(
