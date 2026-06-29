@@ -661,7 +661,7 @@ def find_dacsts(
             }
         }
 
-def find_IWG(
+def find_iwg(
     latitude: float,
     longitude: float
 ) -> dict:
@@ -907,7 +907,7 @@ def reset_cache(target: str = "all"):
 #     _load_iwg_dbf()
 #     find_utility(longitude, latitude)
 #     find_dacsts(longitude, latitude)
-#     find_IWG(longitude, latitude)
+#     find_iwg(longitude, latitude)
 #
 # validate(longitude,latitude)
 #
