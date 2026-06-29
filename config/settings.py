@@ -1,13 +1,29 @@
 """
 ENSITE Application Settings
 """
+
+# ============================================
+# SILENCE TENSORFLOW WARNINGS
+# Must be set BEFORE any tensorflow imports
+# ============================================
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import logging
+from config.suppress_warnings import *
 
-load_dotenv()
+# Silence oneDNN floating point warning
+# Safe for ENSITE - we do not need this precision
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
+# Silence all TensorFlow info messages
+# 0=all, 1=info, 2=warnings, 3=errors only
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+# Silence absl (Google's logging library)
+# used internally by TensorFlow
+os.environ["GRPC_VERBOSITY"] = "ERROR"
+os.environ["GLOG_minloglevel"] = "3"
 
 # ============================================
 # API Configuration
@@ -28,8 +44,6 @@ load_dotenv()
 # ============================================
 # Data Paths
 # ============================================
-
-
 
 """
 ENSITE Application Settings
@@ -59,11 +73,6 @@ Usage in other files:
 Author: ENSITE Project, UNH
 Date: June 2026
 """
-
-import os
-import logging
-from pathlib import Path
-from dotenv import load_dotenv
 
 # ============================================
 # STEP 1: LOAD .env FILE
@@ -97,7 +106,7 @@ logger = logging.getLogger(__name__)
 # works correctly on Windows, Mac, and Linux
 # regardless of where the project is located
 # ============================================
-BASE_DIR = Path(__file__).parent.parent
+#BASE_DIR = Path(__file__).parent.parent
 
 # ============================================
 # STEP 4: DIRECTORY PATHS
