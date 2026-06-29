@@ -950,10 +950,10 @@ def main():
     else:
         run_node2 = input(
             "\nRun Node 2 LLM research test? "
-            "(30-90 seconds) (y/n): "
+            "(30-90 seconds) (yes/no): "
         ).strip().lower()
 
-        if run_node2 == "y":
+        if run_node2 == "yes":
             node2_result = test_node2_llm_research(
                 node1_result
             )
@@ -974,10 +974,10 @@ def main():
     else:
         run_node3 = input(
             "\nRun Node 3 report formatting test? "
-            "(30-60 seconds) (y/n): "
+            "(30-60 seconds) (yes/no): "
         ).strip().lower()
 
-        if run_node3 == "y":
+        if run_node3 == "yes":
             node3_result = test_node3_format_report(
                 node2_result
             )
@@ -998,10 +998,10 @@ def main():
     else:
         run_full = input(
             "\nRun full Agent 2 pipeline test? "
-            "(60-180 seconds) (y/n): "
+            "(60-180 seconds) (yes/no): "
         ).strip().lower()
 
-        if run_full == "y":
+        if run_full == "yes":
 
             # Let user choose test case
             print("\n  Available test cases:")
