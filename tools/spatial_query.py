@@ -779,11 +779,11 @@ def find_iwg(
         # Extract attributes from the matched row only
         name = attributes['name'].iloc[0]
         facility_a = attributes['facility_a'].iloc[0]
-        naics_ni_c = attributes['naics_ni_c'].iloc[0]
+        naics = attributes['naics_ni_c'].iloc[0]
 
         logger.info(
             f"IWG match found: {name} "
-            f"({facility_a}, NAICS: {naics_ni_c})"
+            f"({facility_a}, NAICS: {naics})"
         )
 
         return {
@@ -791,7 +791,7 @@ def find_iwg(
             "IWG_status": True,
             "name":       str(name),
             "facility_a": str(facility_a),
-            "naics_ni_c": str(naics_ni_c),
+            "naics_ni_c": str(naics),
             "confidence": "high",
             "source":     "IWG Manufacturers Database",
             "coordinates_queried": {
