@@ -80,19 +80,28 @@ def main():
         print("lon =",result["longitude"])
 
 #     """----Uncomment to Validate Tool---"""
-#     result = geocode_address(address)
-#     print("Source:",result["source"])
-#     print("Latitude:",result["latitude"])
-#     print("Longitude:",result["longitude"])
-#     print(result["formatted_address"])
-#
-# if __name__ == "__main__":
-#     main()
+    result = geocode_address(address)
+    print("Source:",result["source"])
+    print("Latitude:",result["latitude"])
+    print("Longitude:",result["longitude"])
+    print(result["formatted_address"])
+
+if __name__ == "__main__":
+    main()
 
 def load_installations(filepath: str) -> pd.DataFrame:
     """
     Loads onsite energy installation records from
     an Excel spreadsheet into a pandas DataFrame.
+
+    Transformations applied:
+        1. Strip leading/trailing whitespace from
+           all string columns
+        2. Standardize column names to lowercase
+           with underscores (e.g. "Site Name" → "site_name")
+        3. Pad zip codes with leading zeros to ensure
+           all values are 5 digits
+           (e.g. 3824 → "03824")
 
     Args:
         filepath: Path to the Excel file
@@ -104,22 +113,36 @@ def load_installations(filepath: str) -> pd.DataFrame:
     try:
         df = pd.read_excel(
             filepath,
-            dtype={"ZIP": str}  # Preserve leading zeros in zip codes
+            dtype={"Zip Code": str}  # Preserve any existing leading zeros
+                                     # before column renaming occurs
         )
 
-        # Strip leading/trailing whitespace from all string columns
+        # Step 1: Strip leading/trailing whitespace from all string columns
         str_cols = df.select_dtypes(include="object").columns
         df[str_cols] = df[str_cols].apply(lambda col: col.str.strip())
 
-        # Standardize column names:
-        # lowercase, spaces replaced with underscores
-        # e.g. "Site Name" → "site_name"
+        # Step 2: Standardize column names to lowercase with underscores
         df.columns = (
             df.columns
             .str.strip()
             .str.lower()
             .str.replace(" ", "_")
         )
+
+        # Step 3: Pad zip codes with leading zeros
+        if "zip_code" in df.columns:
+            df["zip_code"] = (
+                df["zip_code"]
+                .astype(str)
+                .str.strip()
+                .str.zfill(5)
+            )
+        else:
+            print(
+                "Warning: 'Zip Code' column not found. "
+                "Zip code padding was not applied.\n"
+                f"Available columns: {df.columns.tolist()}"
+            )
 
         print(f"Loaded {len(df)} records, {len(df.columns)} columns")
         print(f"Columns: {df.columns.tolist()}")
@@ -133,10 +156,6 @@ def load_installations(filepath: str) -> pd.DataFrame:
     except Exception as e:
         print(f"Error loading file: {e}")
         return pd.DataFrame()
-
-
-# Run it
-df = load_installations(INSTALLATIONS_XLSX)
 
 def get_installations_by_zipcode(
     df: pd.DataFrame,
@@ -270,3 +289,30 @@ def get_installations_by_zipcode(
         "count":         len(installations),
         "installations": installations
     }
+# -------- UNCOMMENT to Validate---------
+def prompt_zip_and_display(df):
+    print("\n=== Installation Lookup ===")
+    zipcode = input("Enter a 5‑digit ZIP code: ").strip()
+
+    result = get_installations_by_zipcode(df, zipcode)
+
+    print("\n=== Lookup Result ===")
+    print(f"Success: {result['success']}")
+    print(f"ZIP Code Queried: {result['zipcode']}")
+    print(f"Count: {result['count']}")
+
+    # If failed, show error + suggestion
+    if not result["success"]:
+        print(f"Error: {result.get('error', 'Unknown error')}")
+        if "suggestion" in result:
+            print(f"Suggestion: {result['suggestion']}")
+        return
+
+    # If successful, print each installation record
+    print("\nInstallations:")
+    for i, inst in enumerate(result["installations"], start=1):
+        print(f"\n--- Installation {i} ---")
+        for key, value in inst.items():
+            print(f"{key}: {value}")
+#df = load_installations(INSTALLATIONS_XLSX)
+#prompt_zip_and_display(df)

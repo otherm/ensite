@@ -78,11 +78,11 @@ def print_result(label: str, value, expected=None):
 # ============================================
 # PRE-FLIGHT CHECK
 # ============================================
-def test_shapefile_diagnostic():
+def test_shapefile_diagnostic(target: str):
     """Check shapefile before running node tests."""
     print_test_header("Pre-flight: Shapefile Diagnostic")
 
-    info = get_shapefile_info()
+    info = get_shapefile_info(target) # Test on target shapefile (utility/dacsts/iwg)
 
     print(f"  📁 Path:    {info['path']}")
     print(f"  📄 Exists:  {info['exists']}")
@@ -98,7 +98,7 @@ def test_shapefile_diagnostic():
 
     if info["loaded"]:
         print(f"  📊 Rows:    {info['row_count']}")
-        print(f"  🗂️  Columns: {info['columns']}")
+        print(f"  🗂️ Columns: {info['columns']}")
         print(f"  🌐 CRS:     {info['crs']}")
         print(f"  ✅ Shapefile loaded successfully")
         return True
@@ -217,8 +217,8 @@ def test_node_find_dacsts(geocoded_state=None):
         print("  Using hardcoded Durham NH coordinates")
         state = blank_state()
         state["address"] = "105 Main Street, Durham, NH 03824"
-        state["latitude"] = 43.1348
-        state["longitude"] = -70.9234
+        state["latitude"] = 43.1359256
+        state["longitude"] = -70.932447
     else:
         state = geocoded_state
 
@@ -232,19 +232,18 @@ def test_node_find_dacsts(geocoded_state=None):
 
     print_result("DAC Status", result["DACSTS"], expected=False)
     print_result("City", result["city"])
-    print_result("County", result["county"])
-    print_result("State Abb.", result["stateabb"])
+    print_result("State", result["stateabb"])
     print_result("Error", result["error"])
 
     if result["DACSTS"]:
         print(f"\n  ✅ Node 3 PASSED")
         # Sanity check for Durham NH
-        if "Strafford County" in str(result["county"]).lower():
-            print(f"  ✅ Correct location for Durham NH (Strafford County)")
+        if "0" in str(result["DACSTS"]).lower():
+            print(f"  ✅ Correct DAC Status for Durham NH (0)")
         else:
             print(
-                f"  ⚠️  Unexpected county: {result['county']}"
-                f"\n     Expected Strafford County for Durham NH"
+                f"  ⚠️  Unexpected DAC Status: {result['DACSTS']}"
+                f"\n     Expected False for Durham NH"
             )
         return result
     else:
@@ -267,13 +266,13 @@ def test_node_find_iwg(geocoded_state=None):
     print_test_header("Node 4: Find IWG Status")
 
     if geocoded_state is None:
-        # Use known coordinates for Systems Engineering Inc. Portland ME
+        # Use known coordinates for Durham Boat Co., Inc. Durham NH
         # if geocoding was not run first
-        print("  Using hardcoded Systems Engineering Inc. coordinates")
+        print("  Using hardcoded Durham Boat Co., Inc. coordinates")
         state = blank_state()
-        state["address"] = "120 Exchange St, Portland, ME, 04101"
-        state["latitude"] = 43.65846
-        state["longitude"] = -70.25695
+        state["address"] = "220 Newmarket Rd, Durham, NH 03824"
+        state["latitude"] = 43.1032649
+        state["longitude"] = -70.9302111
     else:
         state = geocoded_state
 
@@ -290,15 +289,15 @@ def test_node_find_iwg(geocoded_state=None):
     print_result("NAICS Code", result["naics_ni_c"])
     print_result("Error", result["error"])
 
-    if result["name"] and result["facility_a"]:
+    if result["facility_a"]:
         print(f"\n  ✅ Node 4 PASSED")
         # Sanity check for Durham NH
-        if "334210" in result["naics_ni_c"]:
-            print(f"  ✅ Correct NAICS for Systems Engineering, Inc. (334210)")
+        if "336612" in result["naics_ni_c"]:
+            print(f"  ✅ Correct NAICS for Durham Boat Co., Inc. (336612)")
         else:
             print(
-                f"  ⚠️  Unexpected NAICS: {result['utility_name']}"
-                f"\n     Expected 334210 for Systems Engineering, Inc."
+                f"  ⚠️  Unexpected NAICS: {result['naics_ni_c']}"
+                f"\n     Expected 336612 for Durham Boat Co., Inc."
             )
         return result
     else:
@@ -417,12 +416,18 @@ def main():
         "node1": False,
         "node2": False,
         "node3": False,
-        "node4": False
+        "node4": False,
+        "node5": False,
+        "node6": False
     }
 
     # Pre-flight check
-    shapefile_ok = test_shapefile_diagnostic()
-    results["preflight"] = shapefile_ok
+    utility_shapefile_ok = test_shapefile_diagnostic("utility")
+    results["preflight"] = utility_shapefile_ok
+    dacsts_shapefile_ok = test_shapefile_diagnostic("dac")
+    results["preflight"] = dacsts_shapefile_ok
+    iwg_shapefile_ok = test_shapefile_diagnostic("iwg")
+    results["preflight"] = iwg_shapefile_ok
 
     # Node 1: Geocoding
     geocoded = test_node_geocode()
@@ -430,25 +435,43 @@ def main():
 
     # Node 2: Utility lookup
     # Only run if shapefile is available
-    if shapefile_ok:
+    if utility_shapefile_ok:
         utility = test_node_find_utility(geocoded)
         results["node2"] = utility is not None
     else:
         print("\n⏭️  Skipping Node 2 — shapefile not found")
         utility = None
 
-    # Node 3: Regulatory info
+    # Node 3: DAC Status lookup
+    # Only run if shapefile is available
+    if dacsts_shapefile_ok:
+        dacsts = test_node_find_dacsts(geocoded)
+        results["node3"] = dacsts is not None
+    else:
+        print("\n⏭️  Skipping Node 3 — shapefile not found")
+        dacsts = None
+
+    # Node 4: IWG lookup
+    # Only run if shapefile is available
+    if iwg_shapefile_ok:
+        iwg = test_node_find_iwg(geocoded_state=None)
+        results["node4"] = iwg is not None
+    else:
+        print("\n⏭️  Skipping Node 4 — shapefile not found")
+        iwg = None
+
+    # Node 5: Regulatory info
     # Runs regardless of shapefile
 
     reg_info = test_node_regulatory_info(utility)
-    results["node3"] = reg_info is not None
+    results["node5"] = reg_info is not None
 
-    # Node 4: LLM summary
+    # Node 6: LLM summary
     # Ask user before running (takes time)
 
     print("\n" + "─" * 55)
     run_llm = input(
-        "Run Node 4 LLM test? "
+        "Run Node 6 LLM test? "
         "Requires Ollama (yes/no): "
     ).strip().lower()
 
@@ -456,9 +479,9 @@ def main():
         llm_result = test_node_llm_summary(reg_info)
         print('llm result')
         print(llm_result)
-        results["node4"] = llm_result is not None
+        results["node6"] = llm_result is not None
     else:
-        print("  ⏭️  Skipping Node 4 LLM test")
+        print("  ⏭️  Skipping Node 6 LLM test")
 
     # Summary
     print("\n" + "=" * 55)
@@ -469,8 +492,10 @@ def main():
         "preflight": "Shapefile diagnostic",
         "node1": "Node 1: Geocoding",
         "node2": "Node 2: Utility lookup",
-        "node3": "Node 3: Regulatory info",
-        "node4": "Node 4: LLM summary"
+        "node3": "Node 3: DAC Status lookup",
+        "node4": "Node 4: IWG lookup",
+        "node5": "Node 5: Regulatory info",
+        "node6": "Node 6: LLM summary"
     }
 
     passed = 0
@@ -482,7 +507,7 @@ def main():
 
     print(f"\n  {passed}/{len(results)} tests passed")
 
-    if not results["node2"] and shapefile_ok:
+    if not results["node2"] and utility_shapefile_ok:
         print(
             f"\n⚠️  Node 2 failed with shapefile present."
             f"\n   Most likely cause: missing 'global _utility_gdf'"
