@@ -123,6 +123,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHAPEFILE_DIR = os.path.join(BASE_DIR, "data", "shapefiles")
 POLICY_DOCS_DIR = os.path.join(BASE_DIR, "data", "policy_docs")
 CACHE_DIR = os.path.join(BASE_DIR, "data", "cache")
+INSTALLATIONS_XLSX = os.path.join(BASE_DIR, "data", "onsite_energy_installations.xlsx")
 OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 # ============================================

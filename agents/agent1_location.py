@@ -282,7 +282,6 @@ def node_find_dacsts(agent_state: AgentState) -> AgentState:
             state["longitude"]
     Writes: state["DACSTS"]
             state["city"]
-            state["county"]
             state["stateabb"]
     """
     logger.info(
@@ -292,10 +291,7 @@ def node_find_dacsts(agent_state: AgentState) -> AgentState:
 
     try:
         # Call spatial query tool from tools/spatial_query.py
-        result = find_dacsts(
-            agent_state["latitude"],
-            agent_state["longitude"]
-        )
+        result = find_dacsts(agent_state["latitude"], agent_state["longitude"])
 
         if result["success"]:
             agent_state["DACSTS"] = result.get(
@@ -303,9 +299,6 @@ def node_find_dacsts(agent_state: AgentState) -> AgentState:
             )
             agent_state["city"] = result.get(
                 "city", "Unknown"
-            )
-            agent_state["county"] = result.get(
-                "county", "Unknown"
             )
             agent_state["stateabb"] = result.get(
                 "stateabb", "Unknown"
