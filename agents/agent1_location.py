@@ -92,8 +92,8 @@ class AgentState(TypedDict):
     address: str                        # Facility address from user
 
     # SET BY NODE 1 (geocoding)
-    latitude: Optional[float]           # Lat from geocoding
-    longitude: Optional[float]          # Lon from geocoding
+    latitude: Optional[float]      # Lat from geocoding
+    longitude: Optional[float]     # Lon from geocoding
     formatted_address: Optional[str]    # Cleaned address string
     geocode_confidence: Optional[str]   # high/medium/low
 
@@ -112,7 +112,7 @@ class AgentState(TypedDict):
     # SET BY NODE 4 (iwg status lookup)
     name: Optional[str]                 # Name of company/industry
     facility_a: Optional[str]           # Facility address
-    naics_ni_s: Optional[str]           # NAICS Code
+    naics_ni_c: Optional[str]           # NAICS Code
 
     # SET BY NODE 5 (regulatory info)
     regulatory_info: Optional[dict]     # From state_data.py
@@ -372,8 +372,7 @@ def node_find_iwg(agent_state: AgentState) -> AgentState:
                 "naics_ni_c", "Unknown"
             )
             logger.info(
-                f"  Found IWG Status: {agent_state['DACSTS']} "
-                f"({agent_state['facility_a']})"
+                f"  Found IWG Status: {agent_state['name']} "
             )
 
         else:
