@@ -65,7 +65,63 @@ def geocode_address(address: str) -> dict:
          "success": False,
          "error": f"Could not geocode: {address}",
          "suggestion": "Try adding zip code or state to address"  
-             } 
+             }
+def reverse_geocode(
+    latitude: float,
+    longitude: float
+) -> dict:
+    """
+    Converts lat/lon coordinates to a formatted
+    street address using the Google Maps API.
+
+    Args:
+        latitude:  Facility latitude coordinate
+        longitude: Facility longitude coordinate
+
+    Returns:
+        dict with:
+        - success:           True/False
+        - formatted_address: Formatted street address
+        - source:            "GoogleV3"
+        - confidence:        high/medium/low
+        - error:             Error message if failed
+    """
+    try:
+        geolocator = GoogleV3(api_key=GOOGLE_MAPS_API_KEY)
+        location = geolocator.reverse(
+            f"{latitude}, {longitude}",
+            timeout=10,
+            exactly_one=True   # Return only the best match
+        )
+
+        if location:
+            return {
+                "success":           True,
+                "formatted_address": location.address,
+                "source":            "GoogleV3",
+                "confidence":        "high"
+            }
+
+        return {
+            "success": False,
+            "error": (
+                f"No address found for coordinates "
+                f"{latitude}, {longitude}"
+            ),
+            "suggestion": (
+                "Verify the coordinates are correct."
+            )
+        }
+
+    except (GeocoderTimedOut, GeocoderServiceError) as e:
+        return {
+            "success": False,
+            "error":   f"Reverse geocoding failed: {e}",
+            "suggestion": (
+                "Check that the Google Maps API key is valid "
+                "and has the Geocoding API enabled."
+            )
+        }
 def main():
     #Prompt the user for their address
     try:
@@ -86,8 +142,8 @@ def main():
     print("Longitude:",result["longitude"])
     print(result["formatted_address"])
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#   main()
 
 def load_installations(filepath: str) -> pd.DataFrame:
     """
@@ -289,8 +345,8 @@ def get_installations_by_zipcode(
         "count":         len(installations),
         "installations": installations
     }
-# -------- UNCOMMENT to Validate---------
-def prompt_zip_and_display(df):
+
+def validate(df):
     print("\n=== Installation Lookup ===")
     zipcode = input("Enter a 5‑digit ZIP code: ").strip()
 
@@ -314,5 +370,6 @@ def prompt_zip_and_display(df):
         print(f"\n--- Installation {i} ---")
         for key, value in inst.items():
             print(f"{key}: {value}")
+# -------- UNCOMMENT to Validate---------
 #df = load_installations(INSTALLATIONS_XLSX)
-#prompt_zip_and_display(df)
+#validate(df)

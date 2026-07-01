@@ -21,7 +21,7 @@ import os
 import re
 import geopandas as gpd
 from shapely.geometry import Point
-from tools.geocoding import geocode_address
+from tools.geocoding import geocode_address, reverse_geocode
 from config.settings import (
     SHAPEFILE_DIR,
     NEW_ENGLAND_STATES,
@@ -614,19 +614,19 @@ def find_dacsts(
     joined_gdf = gpd.sjoin(point_gdf, gdf, predicate="within")
 
     if not joined_gdf.empty:
-        DAC_status = joined_gdf['DACSTS'].iloc[0]
+        DACSTS = joined_gdf['DACSTS'].iloc[0]
         city = joined_gdf['city'].iloc[0]
         county = joined_gdf['county'].iloc[0]
         stateabb = joined_gdf['stateabb'].iloc[0]
 
         logger.info(
-            f"DAC status found: {DAC_status} "
+            f"DAC status found: {DACSTS} "
             f"({city}, {county}, {stateabb})"
         )
 
         return {
             "success": True,
-            "DAC_status": str(DAC_status),
+            "DACSTS": str(DACSTS),
             "city": str(city),
             "stateabb": str(stateabb),
             "iso_region": "ISO New England (ISO-NE)",
@@ -661,7 +661,7 @@ def find_dacsts(
             }
         }
 
-def find_IWG(
+def find_iwg(
     latitude: float,
     longitude: float
 ) -> dict:
@@ -742,10 +742,12 @@ def find_IWG(
             )
         }
 
-    geocode_result = geocode_address(
-        address=f"{latitude}, {longitude}"
+    geocode_result = reverse_geocode(
+        latitude=latitude,
+        longitude=longitude
     )
-
+# ------ UNCOMMENT to test geocode_result---------
+#    print(geocode_result["formatted_address"],"boof")
     if not geocode_result["success"]:
         return {
             "success": False,
@@ -766,17 +768,18 @@ def find_IWG(
     # - Remove ", USA" suffix
     # - Expand road type abbreviations
     formatted_address = _normalize_address(
-        result["formatted_address"]
+        geocode_result["formatted_address"]
     )
-
+    # ---UNCOMMENT to test formatted_address---
+    #print(formatted_address,"boof")
     attributes = gdf[gdf['facility_a'] == formatted_address]
 
     # FIX 5: Use .empty to properly evaluate match
     if not attributes.empty:
         # Extract attributes from the matched row only
-        name        = attributes['name'].iloc[0]
-        facility_a  = attributes['facility_a'].iloc[0]
-        naics       = attributes['naics_ni_c'].iloc[0]
+        name = attributes['name'].iloc[0]
+        facility_a = attributes['facility_a'].iloc[0]
+        naics = attributes['naics_ni_c'].iloc[0]
 
         logger.info(
             f"IWG match found: {name} "
@@ -788,7 +791,7 @@ def find_IWG(
             "IWG_status": True,
             "name":       str(name),
             "facility_a": str(facility_a),
-            "naics":      str(naics),
+            "naics_ni_c": str(naics),
             "confidence": "high",
             "source":     "IWG Manufacturers Database",
             "coordinates_queried": {
@@ -818,7 +821,7 @@ def find_IWG(
                 "longitude": longitude
             }
         }
-def get_shapefile_info(target: str = "utility") -> dict:
+def get_shapefile_info(target: str) -> dict:
     """
     Returns diagnostic information about the
     loaded shapefile. Useful for debugging.
@@ -835,7 +838,10 @@ def get_shapefile_info(target: str = "utility") -> dict:
         path = os.path.join(UTILITY_SHAPEFILE)
         gdf = gpd.read_file(path)
     elif target == "dac":
-        path = DOE_DAC_SHAPEFILE
+        path = os.path.join(DOE_DAC_SHAPEFILE)
+        gdf = gpd.read_file(path)
+    elif target == "iwg":
+        path = os.path.join(IWG_DATABASE)
         gdf = gpd.read_file(path)
     else:
         return{
@@ -907,9 +913,9 @@ def reset_cache(target: str = "all"):
 #     _load_iwg_dbf()
 #     find_utility(longitude, latitude)
 #     find_dacsts(longitude, latitude)
-#     find_IWG(longitude, latitude)
+#     find_iwg(longitude, latitude)
 #
 # validate(longitude,latitude)
-#
+
 
 
